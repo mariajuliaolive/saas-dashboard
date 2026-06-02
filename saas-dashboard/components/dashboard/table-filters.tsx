@@ -147,7 +147,6 @@ export function TableFilters({
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
-            initialFocus
             mode="range"
             defaultMonth={dateRange?.from}
             selected={dateRange}

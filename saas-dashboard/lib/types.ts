@@ -39,3 +39,19 @@ export interface TableState {
   sortDir: SortDir
   selected: Set<string>
 }
+
+export type TaskPriority = "high" | "medium" | "low"
+export type TaskStatus = "pending" | "in-progress" | "done" | "overdue"
+
+export interface Task {
+  id: string
+  title: string
+  clientId: string
+  clientName: string
+  company: string
+  priority: TaskPriority
+  status: TaskStatus
+  assignee: string
+  dueDate: string // ISO date
+  createdAt: string // ISO date
+}

@@ -60,6 +60,114 @@ import type { Client, ClientStatus, ClientPlan, SortField, SortDir } from "@/lib
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
+function ClientMobileCard({
+  client,
+  selected,
+  onToggle,
+  onAction,
+}: {
+  client: Client
+  selected: boolean
+  onToggle: () => void
+  onAction: (action: string, client: Client) => void
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-md border border-border bg-card p-3 flex flex-col gap-2.5",
+        selected && "border-indigo-500/30 bg-indigo-500/5"
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={onToggle}
+            aria-label={`Selecionar ${client.company}`}
+            className="h-3.5 w-3.5 mt-0.5 shrink-0"
+          />
+          <div>
+            <p className="text-xs font-medium leading-tight">{client.company}</p>
+            <p className="text-[11px] text-muted-foreground">{client.name}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <StatusBadge status={client.status} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                aria-label={`Ações para ${client.company}`}
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                className="gap-2 text-xs"
+                onSelect={() => onAction("Tarefa atribuída", client)}
+              >
+                <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                Atribuir tarefa
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2 text-xs"
+                onSelect={() => onAction("Contato registrado", client)}
+              >
+                <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+                Registrar contato
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-xs">
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                Ver detalhes
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="gap-2 text-xs text-red-400 focus:text-red-400"
+                onSelect={() => onAction("Cliente removido", client)}
+              >
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                Remover
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 text-xs">
+        <div>
+          <p className="text-[11px] text-muted-foreground">Plano</p>
+          <p>{PLAN_LABELS[client.plan]}</p>
+        </div>
+        <div>
+          <p className="text-[11px] text-muted-foreground">Responsável</p>
+          <p>{client.owner}</p>
+        </div>
+        <div>
+          <p className="text-[11px] text-muted-foreground">MRR</p>
+          <p className="tabular-nums">{client.mrr > 0 ? formatMRR(client.mrr) : "—"}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <SlaBar consumed={client.slaConsumed} />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 cursor-default">
+              {formatDate(client.lastContact)}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            {daysSince(client.lastContact)} dia{daysSince(client.lastContact) !== 1 ? "s" : ""} atrás
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </div>
+  )
+}
+
 function SlaBar({ consumed }: { consumed: number }) {
   // Color transitions: green (safe) → amber (warning) → red (critical)
   const color = slaColor(consumed)
@@ -303,8 +411,27 @@ export function ClientsTable() {
           </div>
         )}
 
-        {/* Table wrapper — horizontal scroll on small screens */}
-        <div className="overflow-x-auto rounded-md border border-border">
+        {/* Mobile: card list */}
+        <div className="flex flex-col gap-2 md:hidden">
+          {pageRows.length === 0 ? (
+            <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
+              Nenhum cliente encontrado com os filtros aplicados.
+            </div>
+          ) : (
+            pageRows.map((client) => (
+              <ClientMobileCard
+                key={client.id}
+                client={client}
+                selected={selected.has(client.id)}
+                onToggle={() => toggleRow(client.id)}
+                onAction={quickAction}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden md:block overflow-x-auto rounded-md border border-border">
           <Table>
             <TableHeader>
               <TableRow className="h-9 bg-muted/30 hover:bg-muted/30">
